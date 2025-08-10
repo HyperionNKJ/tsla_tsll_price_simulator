@@ -81,7 +81,7 @@ export default function TSLA_TSLL_Price_Simulator() {
 
     let curTsla = tsla;
     let curTsll = tsll;
-    let newRows = [...rows];
+    const newRows = [...rows];
     tokens.forEach((tok) => {
       // token may be like +5 or -3 or 2 or -2.5
       const v = Number(tok);
@@ -277,7 +277,7 @@ export default function TSLA_TSLL_Price_Simulator() {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="batch">Batch apply (comma/space/newline separated %, e.g. "+5, -3, 2.5, -1")</Label>
+            <Label htmlFor="batch">Batch apply (comma/space/newline separated %, e.g. &quot;+5, -3, 2.5, -1&quot;)</Label>
             <div className="flex items-start gap-3">
               <Input
                 id="batch"
