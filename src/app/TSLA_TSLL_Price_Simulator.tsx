@@ -16,7 +16,7 @@ import {
 } from "recharts";
 
 // Helper to format numbers to 2dp consistently
-const fmt = (n) => (Number.isFinite(n) ? n.toFixed(2) : "-");
+const fmt = (n: number): string => (Number.isFinite(n) ? n.toFixed(2) : "-");
 
 export default function TSLA_TSLL_Price_Simulator() {
   // Initial inputs
@@ -33,7 +33,15 @@ export default function TSLA_TSLL_Price_Simulator() {
   const [batch, setBatch] = useState(""); // e.g. "+5,-3,+2.5"
 
   // History of steps
-  const [rows, setRows] = useState([]); // {step, pct, tsla, tsll, profit}
+  type Row = {
+    step: number;
+    pct: number;
+    tsla: number;
+    tsll: number;
+    profit: number;
+  };
+
+  const [rows, setRows] = useState<Row[]>([]);
 
   const profit = useMemo(
     () => (tsll - tsllInit) * (tsllCount || 0),
@@ -49,7 +57,7 @@ export default function TSLA_TSLL_Price_Simulator() {
     setPct(0);
   };
 
-  const applyChange = (deltaPct) => {
+  const applyChange = (deltaPct: number) => {
     if (!Number.isFinite(deltaPct)) return;
     const tslaMult = 1 + deltaPct / 100;
     const tsllMult = 1 + (2 * deltaPct) / 100; // 2x leverage
