@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trash2, RefreshCw, Plus, Minus, Upload } from "lucide-react";
+import { Trash2, RefreshCw, Plus, Minus, Play, ListVideo, Dices, Undo } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -192,8 +192,8 @@ export default function TSLA_TSLL_Price_Simulator() {
 
       {/* Inputs */}
       <Card className="shadow-sm">
-        <CardContent className="p-6 grid gap-6 md:grid-cols-3">
-          <div className="space-y-2">
+        <CardContent className="p-6 grid gap-6 md:grid-cols-5">
+          <div className="space-y-2 min-w-0">
             <Label htmlFor="tslaInit">Initial TSLA</Label>
             <Input
               id="tslaInit"
@@ -213,7 +213,7 @@ export default function TSLA_TSLL_Price_Simulator() {
               }}
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 min-w-0">
             <Label htmlFor="tsllInit">Initial TSLL</Label>
             <Input
               id="tsllInit"
@@ -232,7 +232,7 @@ export default function TSLA_TSLL_Price_Simulator() {
               }}
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 min-w-0">
             <Label htmlFor="tsllCount"># of TSLL</Label>
             <Input
               id="tsllCount"
@@ -252,11 +252,12 @@ export default function TSLA_TSLL_Price_Simulator() {
             />
           </div>
 
-          <div className="md:col-span-3 flex flex-wrap items-end gap-3 pt-2">
+          <div className="md:col-span-2 flex gap-3 w-full md:justify-end md:self-end">
             <Button
               variant="outlineGray"
               onClick={setAsInitials}
               title="Reset current prices to the initial inputs"
+              className="flex-1 md:flex-none whitespace-nowrap"
             >
               <RefreshCw className="mr-2 h-4 w-4" /> Set as initial
             </Button>
@@ -264,6 +265,7 @@ export default function TSLA_TSLL_Price_Simulator() {
               variant="outlineRose"
               onClick={clearHistory}
               title="Clear your simulation history"
+              className="flex-1 md:flex-none whitespace-nowrap"
             >
               <Trash2 className="mr-2 h-4 w-4" /> Clear history
             </Button>
@@ -355,31 +357,34 @@ export default function TSLA_TSLL_Price_Simulator() {
                 disabled={disabled}
               />
             </div>
-            <div className="flex gap-3">
-              <Button variant="softBlue" onClick={() => applyChange(Number(pctInput))} disabled={disabled}>
-                Apply Change
+            <div className="flex gap-3 flex-nowrap w-full sm:w-auto sm:justify-end">
+              <Button className="flex-1 sm:flex-none whitespace-nowrap" variant="softGray" onClick={undoLast} disabled={disabled || rows.length === 0}>
+                <Undo className="mr-2 h-4 w-4" /> Undo
               </Button>
-              <Button variant="softGray" onClick={undoLast} disabled={disabled || rows.length === 0}>
-                Undo
+              <Button className="flex-1 sm:flex-none whitespace-nowrap" variant="softBlue" onClick={() => applyChange(Number(pctInput))} disabled={disabled}>
+                <Play className="mr-2 h-4 w-4" /> Apply
               </Button>
             </div>
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor="batch">Batch apply (comma/space/newline separated %, e.g. &quot;+5, -3, 2.5, -1&quot;)</Label>
-            <div className="flex items-start gap-3">
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto] items-start">
               <Input
                 id="batch"
                 value={batch}
                 onChange={(e) => setBatch(e.target.value)}
                 placeholder="+5, -3, +2.5, -1"
+                className="w-full min-w-0"
               />
-              <Button variant="softPurple" onClick={generateRandom} disabled={disabled}>
-                Generate Random
-              </Button>
-              <Button variant="softBlue" onClick={applyBatch} disabled={disabled || !batch.trim()}>
-                <Upload className="mr-2 h-4 w-4" /> Apply Batch
-              </Button>
+              <div className="flex gap-3 flex-nowrap w-full sm:w-auto sm:justify-end">
+                <Button className="flex-1 sm:flex-none whitespace-nowrap" variant="softPurple" onClick={generateRandom} disabled={disabled}>
+                  <Dices className="mr-2 h-4 w-4" /> Randomize
+                </Button>
+                <Button className="flex-1 sm:flex-none whitespace-nowrap" variant="softBlue" onClick={applyBatch} disabled={disabled || !batch.trim()}>
+                  <ListVideo className="mr-2 h-4 w-4" /> Apply Batch
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
