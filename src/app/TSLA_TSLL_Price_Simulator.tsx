@@ -18,18 +18,43 @@ import {
 // Helper to format numbers to 2dp consistently
 const fmt = (n: number): string => (Number.isFinite(n) ? n.toFixed(2) : "-");
 
+// Random 5 values in [-5, 5], formatted like "+2.5, -1.2, 0, +4.03, -3"
+export function genRandomBatch(min = -5, max = 5, count = 5, dp = 2): string {
+  const factor = Math.pow(10, dp);
+
+  const vals = Array.from({ length: count }, () => {
+    // random in [min, max]
+    let v = min + Math.random() * (max - min);
+
+    // round to dp and avoid -0
+    v = Math.round(v * factor) / factor;
+    if (Object.is(v, -0)) v = 0;
+
+    // pretty print
+    const s = v.toFixed(dp).replace(/\.?0+$/, ""); // trim trailing zeros/decimal
+    const sign = v > 0 ? "+" : "";
+    return `${sign}${s}`;
+  });
+
+  return vals.join(", ");
+}
+
 export default function TSLA_TSLL_Price_Simulator() {
   // Initial inputs
   const [tslaInit, setTslaInit] = useState(100);
   const [tsllInit, setTsllInit] = useState(50);
   const [tsllCount, setTsllCount] = useState(10);
 
+  const [tslaInitInput, setTslaInitInput] = useState<string>("100");
+  const [tsllInitInput, setTsllInitInput] = useState<string>("50");
+  const [tsllCountInput, setTsllCountInput] = useState<string>("10");
+
   // Current prices
   const [tsla, setTsla] = useState(tslaInit);
   const [tsll, setTsll] = useState(tsllInit);
 
   // Change input (percent)
-  const [pct, setPct] = useState(0);
+  const [pctInput, setPctInput] = useState<string>("0");
   const [batch, setBatch] = useState(""); // e.g. "+5,-3,+2.5"
 
   // History of steps
@@ -48,13 +73,19 @@ export default function TSLA_TSLL_Price_Simulator() {
     [tsll, tsllInit, tsllCount]
   );
 
-  const disabled = !Number(tslaInit) || !Number(tsllInit) || !Number(tsllCount);
+  const tslaInitNum = Number(tslaInitInput);
+  const tsllInitNum = Number(tsllInitInput);
+  const tsllCountNum = Number(tsllCountInput);
+  const disabled =
+    !Number.isFinite(tslaInitNum) || tslaInitNum === 0 ||
+    !Number.isFinite(tsllInitNum) || tsllInitNum === 0 ||
+    !Number.isFinite(tsllCountNum) || tsllCountNum === 0;
 
-  const resetToInitials = () => {
+  const setAsInitials = () => {
     setTsla(tslaInit);
     setTsll(tsllInit);
     setRows([]);
-    setPct(0);
+    setPctInput("0");
   };
 
   const applyChange = (deltaPct: number) => {
@@ -112,6 +143,10 @@ export default function TSLA_TSLL_Price_Simulator() {
     setRows(newRows);
   };
 
+  const generateRandom = () => {
+    setBatch(genRandomBatch());
+  };
+
   const undoLast = () => {
     if (rows.length === 0) return;
     const newRows = rows.slice(0, -1);
@@ -130,6 +165,7 @@ export default function TSLA_TSLL_Price_Simulator() {
     setRows([]);
     setTsla(tslaInit);
     setTsll(tsllInit);
+    setPctInput("0");
   };
 
   const chartData = useMemo(() => {
@@ -163,8 +199,18 @@ export default function TSLA_TSLL_Price_Simulator() {
               id="tslaInit"
               type="number"
               step="0.01"
-              value={tslaInit}
-              onChange={(e) => setTslaInit(Number(e.target.value))}
+              value={tslaInitInput}
+              onChange={(e) => setTslaInitInput(e.target.value)}
+              onBlur={() => {
+                const n = Number(tslaInitInput);
+                if (Number.isFinite(n)) {
+                  setTslaInit(n);                     // update the numeric canonical value
+                  setTslaInitInput(n.toFixed(2));     // tidy formatting
+                } else {
+                  // fallback to current numeric value if parse failed
+                  setTslaInitInput(tslaInit.toFixed(2));
+                }
+              }}
             />
           </div>
           <div className="space-y-2">
@@ -173,8 +219,17 @@ export default function TSLA_TSLL_Price_Simulator() {
               id="tsllInit"
               type="number"
               step="0.01"
-              value={tsllInit}
-              onChange={(e) => setTsllInit(Number(e.target.value))}
+              value={tsllInitInput}
+              onChange={(e) => setTsllInitInput(e.target.value)}
+              onBlur={() => {
+                const n = Number(tsllInitInput);
+                if (Number.isFinite(n)) {
+                  setTsllInit(n);
+                  setTsllInitInput(n.toFixed(2));
+                } else {
+                  setTsllInitInput(tsllInit.toFixed(2));
+                }
+              }}
             />
           </div>
           <div className="space-y-2">
@@ -182,22 +237,31 @@ export default function TSLA_TSLL_Price_Simulator() {
             <Input
               id="tsllCount"
               type="number"
-              step="0.01"
-              value={tsllCount}
-              onChange={(e) => setTsllCount(Number(e.target.value))}
+              step="0.01"                // keep if you want fractional units
+              value={tsllCountInput}
+              onChange={(e) => setTsllCountInput(e.target.value)}
+              onBlur={() => {
+                const n = Number(tsllCountInput);
+                if (Number.isFinite(n)) {
+                  setTsllCount(n);
+                  setTsllCountInput(n.toString());
+                } else {
+                  setTsllCountInput(tsllCount.toFixed(2));
+                }
+              }}
             />
           </div>
 
           <div className="md:col-span-3 flex flex-wrap items-end gap-3 pt-2">
             <Button
-              variant="secondary"
-              onClick={resetToInitials}
+              variant="outlineGray"
+              onClick={setAsInitials}
               title="Reset current prices to the initial inputs"
             >
               <RefreshCw className="mr-2 h-4 w-4" /> Set as initial
             </Button>
             <Button
-              variant="destructive"
+              variant="outlineRose"
               onClick={clearHistory}
               title="Clear your simulation history"
             >
@@ -241,7 +305,12 @@ export default function TSLA_TSLL_Price_Simulator() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setPct((p) => Number((p - 1).toFixed(2)))}
+                  onClick={() =>
+                    setPctInput((p) => {
+                      const n = Number(p);
+                      return Number.isFinite(n) ? (n - 1).toFixed(2) : "0.00";
+                    })
+                  }
                   disabled={disabled}
                 >
                   <Minus className="h-4 w-4" />
@@ -250,14 +319,23 @@ export default function TSLA_TSLL_Price_Simulator() {
                   id="pct"
                   type="number"
                   step="0.01"
-                  value={pct}
-                  onChange={(e) => setPct(Number(e.target.value))}
+                  value={pctInput}                      // <-- string
+                  onChange={(e) => setPctInput(e.target.value)}  // <-- do NOT Number(...) here
+                  onBlur={() => {                       // optional tidy-up on blur
+                    const n = Number(pctInput);
+                    setPctInput(Number.isFinite(n) ? n.toFixed(2) : "0");
+                  }}
                   className="text-right"
                 />
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setPct((p) => Number((p + 1).toFixed(2)))}
+                  onClick={() =>
+                    setPctInput((p) => {
+                      const n = Number(p);
+                      return Number.isFinite(n) ? (n + 1).toFixed(2) : "0.00";
+                    })
+                  }
                   disabled={disabled}
                 >
                   <Plus className="h-4 w-4" />
@@ -267,18 +345,21 @@ export default function TSLA_TSLL_Price_Simulator() {
                 type="range"
                 min={-20}
                 max={20}
-                step={0.25}
-                value={pct}
-                onChange={(e) => setPct(Number(e.target.value))}
+                step={0.1}
+                value={Number(pctInput) || 0}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  setPctInput(Number.isFinite(n) ? n.toFixed(2) : "0");
+                }}
                 className="w-full"
                 disabled={disabled}
               />
             </div>
             <div className="flex gap-3">
-              <Button onClick={() => applyChange(pct)} disabled={disabled}>
+              <Button variant="softBlue" onClick={() => applyChange(Number(pctInput))} disabled={disabled}>
                 Apply Change
               </Button>
-              <Button variant="secondary" onClick={undoLast} disabled={disabled || rows.length === 0}>
+              <Button variant="softGray" onClick={undoLast} disabled={disabled || rows.length === 0}>
                 Undo
               </Button>
             </div>
@@ -293,7 +374,10 @@ export default function TSLA_TSLL_Price_Simulator() {
                 onChange={(e) => setBatch(e.target.value)}
                 placeholder="+5, -3, +2.5, -1"
               />
-              <Button onClick={applyBatch} disabled={disabled || !batch.trim()}>
+              <Button variant="softPurple" onClick={generateRandom} disabled={disabled}>
+                Generate Random
+              </Button>
+              <Button variant="softBlue" onClick={applyBatch} disabled={disabled || !batch.trim()}>
                 <Upload className="mr-2 h-4 w-4" /> Apply Batch
               </Button>
             </div>
