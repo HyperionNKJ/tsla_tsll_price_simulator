@@ -44,10 +44,12 @@ export default function TSLA_TSLL_Price_Simulator() {
   const [tslaInit, setTslaInit] = useState(100);
   const [tsllInit, setTsllInit] = useState(50);
   const [tsllCount, setTsllCount] = useState(10);
+  const [tsllPnl, setTsllPnl] = useState(0);
 
   const [tslaInitInput, setTslaInitInput] = useState<string>("100");
   const [tsllInitInput, setTsllInitInput] = useState<string>("50");
   const [tsllCountInput, setTsllCountInput] = useState<string>("10");
+  const [tsllPnlInput, setTsllPnlInput] = useState<string>("0");
 
   // Current prices
   const [tsla, setTsla] = useState(tslaInit);
@@ -69,8 +71,8 @@ export default function TSLA_TSLL_Price_Simulator() {
   const [rows, setRows] = useState<Row[]>([]);
 
   const profit = useMemo(
-    () => (tsll - tsllInit) * (tsllCount || 0),
-    [tsll, tsllInit, tsllCount]
+    () => (tsll - tsllInit) * (tsllCount || 0) + tsllPnl,
+    [tsll, tsllInit, tsllCount, tsllPnl]
   );
 
   const tslaInitNum = Number(tslaInitInput);
@@ -94,7 +96,7 @@ export default function TSLA_TSLL_Price_Simulator() {
     const tsllMult = 1 + (2 * deltaPct) / 100; // 2x leverage
     const nextTsla = tsla * tslaMult;
     const nextTsll = tsll * tsllMult;
-    const nextProfit = (nextTsll - tsllInit) * tsllCount;
+    const nextProfit = (nextTsll - tsllInit) * tsllCount  + tsllPnl;
     const step = rows.length + 1;
     setTsla(nextTsla);
     setTsll(nextTsll);
@@ -135,7 +137,7 @@ export default function TSLA_TSLL_Price_Simulator() {
         pct: v,
         tsla: curTsla,
         tsll: curTsll,
-        profit: (curTsll - tsllInit) * tsllCount,
+        profit: (curTsll - tsllInit) * tsllCount + tsllPnl,
       });
     });
     setTsla(curTsla);
@@ -170,7 +172,7 @@ export default function TSLA_TSLL_Price_Simulator() {
 
   const chartData = useMemo(() => {
     const base = [
-      { step: 0, label: "Start", tsla: tslaInit, tsll: tsllInit, profit: 0 },
+      { step: 0, label: "Start", tsla: tslaInit, tsll: tsllInit, profit: tsllPnl },
       ...rows.map((r) => ({
         step: r.step,
         label: `#${r.step} (${fmt(r.pct)}%)`,
@@ -181,7 +183,7 @@ export default function TSLA_TSLL_Price_Simulator() {
       })),
     ];
     return base;
-  }, [rows, tslaInit, tsllInit]);
+  }, [rows, tslaInit, tsllInit, tsllPnl]);
 
   return (
     <div className="mx-auto max-w-6xl p-6 space-y-6">
@@ -192,7 +194,7 @@ export default function TSLA_TSLL_Price_Simulator() {
 
       {/* Inputs */}
       <Card className="shadow-sm">
-        <CardContent className="p-6 grid gap-6 md:grid-cols-5">
+        <CardContent className="p-6 grid gap-6 md:grid-cols-6">
           <div className="space-y-2 min-w-0">
             <Label htmlFor="tslaInit">Initial TSLA</Label>
             <Input
@@ -228,6 +230,25 @@ export default function TSLA_TSLL_Price_Simulator() {
                   setTsllInitInput(n.toFixed(2));
                 } else {
                   setTsllInitInput(tsllInit.toFixed(2));
+                }
+              }}
+            />
+          </div>
+          <div className="space-y-2 min-w-0">
+            <Label htmlFor="tsllPnl">Initial P/L (TSLL)</Label>
+            <Input
+              id="tsllPnl"
+              type="number"
+              step="0.01"
+              value={tsllPnlInput}
+              onChange={(e) => setTsllPnlInput(e.target.value)}
+              onBlur={() => {
+                const n = Number(tsllPnlInput);
+                if (Number.isFinite(n)) {
+                  setTsllPnl(n);
+                  setTsllPnlInput(n.toFixed(2));
+                } else {
+                  setTsllPnlInput(tsllInit.toFixed(2));
                 }
               }}
             />
@@ -446,12 +467,16 @@ export default function TSLA_TSLL_Price_Simulator() {
                   <td className="py-2 pr-4">–</td>
                   <td className="py-2 pr-4">${fmt(tslaInit)}</td>
                   <td className="py-2 pr-4">${fmt(tsllInit)}</td>
-                  <td className="py-2 pr-4">$0.00</td>
+                  <td className={`py-2 pr-4 ${tsllPnl >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    ${fmt(tsllPnl)}
+                  </td>
                 </tr>
                 {rows.map((r) => (
                   <tr key={r.step} className="border-b">
                     <td className="py-2 pr-4">{r.step}</td>
-                    <td className="py-2 pr-4">{fmt(r.pct)}%</td>
+                    <td className={`py-2 pr-4 ${r.pct >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                      {fmt(r.pct)}%
+                    </td>
                     <td className="py-2 pr-4">${fmt(r.tsla)}</td>
                     <td className="py-2 pr-4">${fmt(r.tsll)}</td>
                     <td className={`py-2 pr-4 ${r.profit >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
